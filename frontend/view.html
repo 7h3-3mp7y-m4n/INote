@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>INote Viewer</title>
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css"
+  />
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0e0e0e;
+      color: #eaeaea;
+      margin: 0;
+      padding: 2rem;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      padding: 1.5rem;
+      background: #1a1a1a;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    }
+
+    pre {
+      background: #282c34;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    code {
+      font-family: Consolas, Monaco, 'Courier New', monospace;
+    }
+
+    h1, h2, h3 {
+      color: #4e4e4d;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="content">Loading...</div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/common.min.js"></script>
+
+  <script>
+    marked.setOptions({
+      breaks: true,
+      highlight: function(code, lang) {
+        return hljs.highlightAuto(code, [lang]).value;
+      },
+      langPrefix: 'hljs language-',
+    });
+
+    async function loadNote() {
+      const slug = window.location.pathname.replace("/view/", "");
+      const res = await fetch(`/notes/${slug}`);
+      if (!res.ok) {
+        document.getElementById("content").innerHTML = "<h2>Note not found</h2>";
+        return;
+      }
+
+      const note = await res.json();
+      let html = "";
+
+      if (note.format === "markdown") {
+        html = marked.parse(note.content);
+      } else if (note.format === "text") {
+        html = `<pre>${note.content}</pre>`;
+      } else {
+        html = `<pre><code class="language-${note.format}">${note.content}</code></pre>`;
+        hljs.highlightAll();
+      }
+
+      document.getElementById("content").innerHTML = html;
+    }
+
+    loadNote();
+  </script>
+</body>
+</html>

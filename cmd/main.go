@@ -67,19 +67,26 @@ func main() {
 		log.Fatalf("failed to connect to DB: %v", err)
 	}
 	defer database.Pool.Close()
-	fmt.Println("DB connected")
+	fmt.Println("✅ DB connected")
 
 	r := gin.Default()
-
-	// API routes
 	r.Static("/app", "./frontend")
 
+	// Redirect root to editor UI
 	r.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/app/")
 	})
+
+	// API endpoints
 	r.POST("/notes", handlers.CreateNoteHandler(database))
-	r.GET("/notes/:slug", handlers.GetNoteHandler(database))
-	log.Printf("🚀 Starting server on port %s...", cfg.AppPort)
+	r.GET("/notes/:slug", handlers.GetNoteHandler(database)) // returns JSON
+
+	// HTML view for a note
+	r.GET("/view/:slug", func(ctx *gin.Context) {
+		ctx.File("./frontend/view.html")
+	})
+
+	log.Printf("Starting server on port %s...", cfg.AppPort)
 	if err := r.Run(":" + cfg.AppPort); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
