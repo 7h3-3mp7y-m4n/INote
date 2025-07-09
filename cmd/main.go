@@ -5,6 +5,7 @@ import (
 	"7h3-3mp7y-m4n/INote/internal/handlers"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"7h3-3mp7y-m4n/INote/internal/db"
@@ -46,14 +47,12 @@ import (
 // }
 
 func main() {
-	// Load .env in non-production environments
 	if os.Getenv("GO_ENV") != "production" {
 		if err := godotenv.Load(); err != nil {
 			log.Println("Warning: could not load .env file")
 		}
 	}
 
-	// Load config
 	cfg := config.LoadConfig()
 	fmt.Println("Loaded config:")
 	fmt.Printf("AppPort: %s\n", cfg.AppPort)
@@ -63,27 +62,23 @@ func main() {
 	fmt.Printf("PostgresDB: %s\n", cfg.PostgresDB)
 	fmt.Printf("RedisAddr: %s\n", cfg.RedisAddr)
 
-	// Init DB
 	database, err := db.NewDB()
 	if err != nil {
 		log.Fatalf("failed to connect to DB: %v", err)
 	}
 	defer database.Pool.Close()
-	fmt.Println("✅ DB connected")
+	fmt.Println("DB connected")
 
-	// Init Gin server
 	r := gin.Default()
 
-	// Health check route
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "UP"})
-	})
-	r.GET("/notes/:slug", handlers.GetNoteHandler(database))
-	// Note routes
-	r.POST("/notes", handlers.CreateNoteHandler(database))
-	// Later: r.GET("/notes/:slug", handlers.GetNoteHandler(database))
+	// API routes
+	r.Static("/app", "./frontend")
 
-	// Start server
+	r.GET("/", func(c *gin.Context) {
+		c.Redirect(http.StatusFound, "/app/")
+	})
+	r.POST("/notes", handlers.CreateNoteHandler(database))
+	r.GET("/notes/:slug", handlers.GetNoteHandler(database))
 	log.Printf("🚀 Starting server on port %s...", cfg.AppPort)
 	if err := r.Run(":" + cfg.AppPort); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
