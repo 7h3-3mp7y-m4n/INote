@@ -42,3 +42,15 @@ func CreateNoteHandler(db *db.DB) gin.HandlerFunc {
 		c.JSON(http.StatusOK, note)
 	}
 }
+
+func GetNoteHandler(db *db.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		slug := ctx.Param("slug")
+		note, err := db.Queries.GetNoteBySlug(ctx.Request.Context(), slug)
+		if err != nil {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "note not found"})
+			return
+		}
+		ctx.JSON(http.StatusOK, note)
+	}
+}
